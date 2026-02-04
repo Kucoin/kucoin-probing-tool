@@ -1,36 +1,35 @@
-from futures_core.client import Trade
-from futures_core.ws_client import KucoinFuturesWsClient
-from futures_core.client import WsToken
+from spot_core.client import Trade
+from spot_core.ws_client import KucoinWsClient
+from spot_core.client import WsToken
 import asyncio
 import time
+from spot_core.client import Market
 import csv
 import socket
 import sys
 import threading
 from datetime import datetime
-from futures_core.client import Market
 
 local_sent_start_time = 0
 local_sent_end_time = 0
 cancel_start_time = 0
 cancel_end_time = 0
 
-#SYMBOL = 'PEOPLEUSDTM'
-SYMBOL = 'XBTUSDTM'
+SYMBOL = 'ZRO-USDT'
 
 YOUR_KEY = 'YOUR_API_KEY'
 YOUR_SEC = 'YOUR_API_SECRET'
 YOUR_PASS = "YOUR_API_PASSPHRASE"
 
 
-csv_file = open('order_data.csv', 'w', newline='')
+csv_file = open('spot_order_data.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
 
 # 写入表头
-csv_writer.writerow(["DateTime", "GetSysTime", "LimitOrder", "CancelOrder",
+csv_writer.writerow(["DateTime",
+                     "GetSysTime", "LimitOrder", "CancelOrder",
                      "LimitOrderWs", "LimitOrderWsMsgTS", "LimitOrderTime",
-                     "CancelOrderWs", "CancelOrderWsMsgTS",
-                    "LimitOrderSrvRTT", "CancelOrderSrvRTT",
+                     "CancelOrderWs", "CancelOrderWsMsgTS", "LimitOrderSrvRTT", "CancelOrderSrvRTT",
                     "WsLat",
 
                      ]), 
@@ -41,7 +40,7 @@ row_data = [""] * ROW_COUNT
 # 并发锁
 row_lock = threading.RLock()
 
-pub_csv_file = open('websocket_pub.csv', 'w', newline='')
+pub_csv_file = open('spot_websocket_pub.csv', 'w', newline='')
 pub_csv_writer = csv.writer(pub_csv_file)
 pub_csv_writer.writerow(["DateTime", "msgTs"])
 
@@ -88,8 +87,8 @@ def place_and_cancel_orders(client, market):
         row_data[1] = server_latency
 
     # Place limit order
-    limit_order_response = client.create_limit_order(SYMBOL, 'buy', '1', '1', '0.1')
-    print("limit_order_response", limit_order_response)
+    limit_order_response = client.create_limit_hf_order(symbol=SYMBOL, side='buy', size='100', price='0.001')
+    print(limit_order_response)
     with row_lock:
         local_sent_start_time = limit_order_response['sttime']
         local_sent_end_time = limit_order_response['edtime']
@@ -98,18 +97,19 @@ def place_and_cancel_orders(client, market):
         row_data[2] = local_sent_end_time - local_sent_start_time
         row_data[9] = srv_end_time - srv_start_time
 
-    # Cancel order
-    cancel_response = client.cancel_order(limit_order_response['orderId'])
+    #Cancel
+    cancel_response = client.cancel_hf_order_by_order_id(symbol=SYMBOL,orderId=limit_order_response['orderId'])
     with row_lock:
         cancel_start_time = cancel_response['sttime']
         cancel_end_time = cancel_response['edtime']
         row_data[3] = cancel_end_time - cancel_start_time 
         row_data[10] = cancel_response['srvedtime'] - cancel_response['srvsttime']
 
+
 async def deal_msg_pub(msg):
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ws_arrive_time = time.time() * 1000  # Local arrival time in ms
-    msgTs = msg['data']['timestamp']
+    msgTs = msg['data']['time']
     with row_lock:
         pub_csv_writer.writerow([current_time, ws_arrive_time - msgTs])
         pub_csv_file.flush()
@@ -120,13 +120,14 @@ async def deal_msg(msg):
     # Filter out messages not related to the target symbol
     if msg['data']['symbol'] != SYMBOL:
         return
+    #print("MSG", msg)
     # WebSocket latency handling
-    ws_arrive_time_us = time.time() * 1000000               # Local arrival time in us
-    ws_arrive_time = ws_arrive_time_us / 1000               # Local arrival time in ms
+    ws_arrive_time_us = time.time() * 1000000  # Local arrival time in us
+    ws_arrive_time = ws_arrive_time_us / 1000  # Local arrival time in ms
     with row_lock:
         if msg['data']['type'] == 'open':
-            ts = msg['data']['ts'] / 1000000                    # Push start time in ms
-            order_time = msg['data']['orderTime'] / 1000000     # Order creation time in ms
+            ts = msg['data']['ts'] / 1000000  # Push start time in ms
+            order_time = msg['data']['orderTime']  # Order creation time in ms
             # Update row data for order placement WebSocket
             row_data[4] = ws_arrive_time
             row_data[5] = ts
@@ -142,12 +143,12 @@ async def deal_msg(msg):
 
 async def _futures_ws_loop():
     wstoken = WsToken(key=YOUR_KEY, secret=YOUR_SEC, passphrase=YOUR_PASS)
-    ws_client = await KucoinFuturesWsClient.create(None, wstoken, deal_msg, private=True)
-    await ws_client.subscribe('/contractMarket/tradeOrders')
+    ws_client = await KucoinWsClient.create(None, wstoken, deal_msg, private=True)
+    await ws_client.subscribe('/spotMarket/tradeOrders')
 
     wstoken_public= WsToken()
-    ws_client_pub = await KucoinFuturesWsClient.create(None, wstoken_public, deal_msg_pub, private=False)
-    await ws_client_pub.subscribe('/contractMarket/level2:XBTUSDTM')
+    ws_client_pub = await KucoinWsClient.create(None, wstoken_public, deal_msg_pub, private=False)
+    await ws_client_pub.subscribe('/market/level2:' + SYMBOL)
 
     while True:
         await asyncio.sleep(60)
@@ -160,7 +161,7 @@ def futures_ws_loop():
 
 async def main():
     client = Trade(key=YOUR_KEY, secret=YOUR_SEC, passphrase=YOUR_PASS)    
-    market = Market(url='https://api-futures.kucoin.com')
+    market = Market(url='https://api.kucoin.com')
 
     # ws 接收线程
     t_ws = threading.Thread(target=futures_ws_loop)

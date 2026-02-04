@@ -24,8 +24,7 @@ public class OnsiteInspectionConstants {
      */
     public static final String MARGIN_URL = "https://api-broker.kucoin.com";
 
-    // todo 填写自己的key
-    public static final String API_KEY = "";
-    public static final String API_SECRET = "";
-    public static final String API_PASSPHRASE = "";
+    public static final String API_KEY = "API_KEY";
+    public static final String API_SECRET = "API_SECRET";
+    public static final String API_PASSPHRASE = "API_PASSPHRASE";
 }

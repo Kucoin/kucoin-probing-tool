@@ -1,68 +1,213 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"go_latency/token"
 	"log"
-	"net/url"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
-func main() {
-	// 服务器地址
-	// serverAddr := "10.40.88.63:10240"
-	serverAddr := "127.0.0.1:10240"
-	u := url.URL{Scheme: "ws", Host: serverAddr, Path: "/inspection"}
-	// 建立 WebSocket 连接
-	log.Printf("Connecting to %s", u.String())
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	if err != nil {
-		log.Fatal("Dial error:", err)
-	}
-	defer conn.Close()
-	// 启动一个 goroutine 读取服务器发送的消息
-	go func() {
-		for {
-			_, message, err := conn.ReadMessage()
-			if err != nil {
-				log.Println("Read error:", err)
-				return
-			}
-			log.Printf("Received from server: %s", message)
-		}
-	}()
-	// 每隔 5 秒发送一条消息给服务器
-	// for {
-	// time.Sleep(5 * time.Second)
-	// message := fmt.Sprintf("Client message at %s", time.Now().Format(time.RFC3339))
-	// message := "{\n" +
-	// 	"  \"scene\": \"spot\",\n" +
-	// 	"  \"symbols\": [\"BTC-USDT\"],\n" +
-	// 	"  \"restApiNameList\": [\"/api/v1/hf/orders\", \"/api/v1/hf/orders/client-order/{clientOid}\"]\n" +
-	// 	"}"
-	// message := "{\n" +
-	// 	"  \"scene\": \"futures\",\n" +
-	// 	"  \"symbols\": [\"XBTUSDTM\"],\n" +
-	// 	"  \"restApiNameList\": [\"/api/v1/orders\", \"/api/v1/orders/client-order/{clientOid}\"]\n" +
-	// 	"}"
-	message := "{\n" +
-		"  \"scene\": \"margin\",\n" +
-		"  \"symbols\": [\"BTC-USDT\"],\n" +
-		"  \"restApiNameList\": [\"/api/v3/hf/margin/order\", \"/api/v3/hf/margin/orders/client-order/{clientOid}\"]\n" +
-		"}"
-	// message := "{\"scene\":\"spot\",\"symbols\":[\"AVA-USDT\",\"FET-BTC\",\"FET-ETH\",\"ANKR-BTC\",\"XMR-BTC\",\"XMR-ETH\",\"MTV-BTC\",\"MTV-ETH\",\"CRO-BTC\",\"MTV-USDT\",\"KMD-USDT\",\"TEL-USDT\",\"TT-USDT\",\"AERGO-USDT\",\"XMR-USDT\",\"TRX-KCS\",\"ATOM-BTC\",\"ATOM-ETH\",\"ATOM-USDT\",\"ATOM-KCS\",\"ETN-USDT\",\"FTM-USDT\",\"VSYS-USDT\",\"CHR-BTC\",\"CHR-USDT\",\"FX-BTC\",\"NIM-BTC\",\"COTI-BTC\",\"COTI-USDT\",\"BNB-BTC\",\"BNB-USDT\",\"ALGO-BTC\",\"ALGO-ETH\",\"ALGO-USDT\",\"XEM-BTC\",\"XEM-USDT\",\"XTZ-BTC\",\"XTZ-USDT\",\"ZEC-BTC\",\"ZEC-USDT\",\"ADA-BTC\",\"ADA-USDT\",\"ARPA-USDT\",\"CHZ-BTC\",\"CHZ-USDT\",\"WIN-BTC\",\"WIN-USDT\",\"BTT-USDT\",\"ONE-BTC\",\"ONE-USDT\",\"TOKO-USDT\",\"LUNA-USDT\",\"SXP-BTC\",\"SXP-USDT\",\"AKRO-BTC\",\"AKRO-USDT\",\"WIN-TRX\",\"AMPL-BTC\",\"AMPL-USDT\",\"DAG-USDT\",\"KPOL-USDT\",\"ARX-USDT\",\"NWC-BTC\",\"NWC-USDT\",\"BEPRO-BTC\",\"BEPRO-USDT\",\"VRA-BTC\",\"VRA-USDT\",\"KSM-BTC\",\"KSM-USDT\",\"DASH-USDT\",\"SUTER-USDT\",\"SENSO-USDT\",\"PRE-BTC\",\"XDB-USDT\",\"SYLO-USDT\",\"SENSO-BTC\",\"DGB-USDT\",\"XDB-BTC\",\"STX-BTC\",\"STX-USDT\",\"COMP-USDT\",\"CRO-USDT\",\"KAI-USDT\",\"KAI-BTC\",\"EWT-BTC\",\"WAVES-USDT\",\"WAVES-BTC\",\"AMPL-ETH\",\"MKR-USDT\",\"MLK-BTC\",\"MLK-USDT\",\"JST-USDT\",\"SUKU-USDT\",\"DIA-USDT\",\"DIA-BTC\",\"LINK-BTC\",\"LINK-USDT\",\"DOT-USDT\",\"DOT-BTC\",\"EWT-USDT\",\"USDJ-USDT\",\"CKB-BTC\",\"CKB-USDT\",\"UMA-USDT\",\"ALEPH-USDT\",\"VELO-USDT\",\"SUN-USDT\",\"YFI-USDT\",\"UNI-USDT\",\"UOS-USDT\",\"UOS-BTC\",\"NIM-USDT\",\"DEGO-USDT\",\"FIL-USDT\",\"AAVE-USDT\",\"AAVE-BTC\",\"IOST-ETH\",\"KCS-USDT\",\"SNX-ETH\",\"KCS-ETH\",\"WAN-ETH\",\"MANA-BTC\",\"TEL-BTC\",\"XYO-ETH\",\"VET-BTC\",\"KCS-BTC\",\"ONT-BTC\",\"DAG-ETH\",\"WAN-BTC\",\"KNC-ETH\",\"LTC-USDT\",\"BAX-ETH\",\"BCHSV-USDT\",\"DENT-ETH\",\"TRAC-ETH\",\"QTUM-USDT\",\"ENJ-BTC\",\"WAX-BTC\",\"DGB-BTC\",\"ELA-BTC\",\"ZIL-BTC\",\"BCHSV-BTC\",\"XLM-USDT\",\"IOTX-ETH\",\"SOUL-BTC\",\"DOCK-BTC\",\"AMB-ETH\",\"TRX-BTC\",\"ETH-DAI\",\"NEO-ETH\",\"OMG-ETH\",\"KNC-BTC\",\"ELF-BTC\",\"MANA-ETH\",\"ETC-USDT\",\"ONT-ETH\",\"MKR-BTC\",\"XRP-USDC\",\"XYO-BTC\",\"ZRX-BTC\",\"TRAC-BTC\",\"XLM-ETH\",\"ETH-USDT\",\"BCHSV-ETH\",\"TRX-ETH\",\"EOS-KCS\",\"XLM-BTC\",\"LSK-ETH\",\"AMB-BTC\",\"ETC-ETH\",\"XRP-BTC\",\"NEO-KCS\",\"SNX-USDT\",\"IOTX-BTC\",\"LTC-ETH\",\"XRP-KCS\",\"LTC-KCS\",\"TEL-ETH\",\"LYM-USDT\",\"USDT-USDC\",\"ETH-USDC\",\"DAG-BTC\",\"AVA-BTC\",\"BTC-USDT\",\"WAX-ETH\",\"XRP-USDT\",\"KEY-ETH\",\"VET-ETH\",\"FTM-BTC\",\"USDT-DAI\",\"ETH-BTC\",\"MAN-BTC\",\"TRX-USDT\",\"BTC-DAI\",\"ONT-USDT\",\"DASH-ETH\",\"BAX-BTC\",\"AVA-ETH\",\"LOOM-BTC\",\"MKR-ETH\",\"EOS-BTC\",\"LTC-BTC\",\"XRP-ETH\",\"FTM-ETH\",\"DGB-ETH\",\"VET-USDT\",\"REQ-BTC\",\"UTK-BTC\",\"SNX-BTC\",\"NEO-BTC\",\"SOUL-ETH\",\"NEO-USDT\",\"OMG-BTC\",\"ETC-BTC\",\"BTC-USDC\",\"ENJ-ETH\",\"IOST-BTC\",\"DASH-BTC\",\"EOS-USDT\",\"EOS-ETH\",\"ZIL-ETH\",\"GAS-BTC\",\"BCH-BTC\",\"VSYS-BTC\",\"BCH-USDT\",\"SOLVE-BTC\",\"PRE-USDT\",\"SHR-BTC\",\"SHR-USDT\",\"VIDT-USDT\",\"ROSE-USDT\",\"USDC-USDT\",\"CTI-USDT\",\"ETH2-ETH\",\"PLU-USDT\",\"GRT-USDT\",\"CAS-BTC\",\"CAS-USDT\",\"REVV-USDT\",\"1INCH-USDT\",\"API3-USDT\",\"UNFI-USDT\",\"HTR-USDT\",\"WBTC-BTC\",\"LTC-USDC\",\"BCH-USDC\",\"HYDRA-USDT\",\"DFI-USDT\",\"DFI-BTC\",\"CRV-USDT\",\"SUSHI-USDT\",\"FRM-USDT\",\"EOS-USDC\",\"BCHSV-USDC\",\"ZEN-USDT\",\"ADA-USDC\",\"REN-USDT\",\"LRC-USDT\",\"LINK-USDC\",\"KLV-USDT\",\"KLV-BTC\",\"THETA-USDT\",\"QNT-USDT\",\"BAT-USDT\",\"DOGE-USDT\",\"DOGE-USDC\",\"DAO-USDT\",\"DOGE-BTC\",\"CAKE-USDT\",\"ORAI-USDT\",\"ZEE-USDT\",\"MASK-USDT\",\"KLV-TRX\",\"IDEA-USDT\",\"PHA-USDT\",\"PHA-ETH\",\"BCH-KCS\",\"ADA-KCS\",\"DOT-KCS\",\"LINK-KCS\",\"BNB-KCS\",\"XLM-KCS\",\"VET-KCS\",\"DASH-KCS\",\"UNI-KCS\",\"AAVE-KCS\",\"DOGE-KCS\",\"ZEC-KCS\",\"GRT-KCS\",\"ALGO-KCS\",\"GAS-USDT\",\"AVAX-USDT\",\"AVAX-BTC\",\"KRL-BTC\",\"KRL-USDT\",\"POLK-USDT\",\"ENJ-USDT\",\"MANA-USDT\",\"SKEY-USDT\",\"LAYER-USDT\",\"TARA-USDT\",\"IOST-USDT\",\"DYP-USDT\",\"DYP-ETH\",\"XYM-USDT\",\"XYM-BTC\",\"ORBS-USDT\",\"ORBS-BTC\",\"BTC3L-USDT\",\"BTC3S-USDT\",\"ETH3L-USDT\",\"ETH3S-USDT\",\"ANKR-USDT\",\"SAND-USDT\",\"VAI-USDT\",\"XCUR-USDT\",\"FLUX-USDT\",\"OMG-USDT\",\"ZIL-USDT\",\"DODO-USDT\",\"MAN-USDT\",\"BAX-USDT\",\"BOSON-USDT\",\"PUNDIX-USDT\",\"PUNDIX-BTC\",\"WAX-USDT\",\"HAI-USDT\",\"FORTH-USDT\",\"GHX-USDT\",\"STND-USDT\",\"TOWER-USDT\",\"ACE-USDT\",\"CWS-USDT\",\"XDC-USDT\",\"XDC-ETH\",\"STRIKE-BTC\",\"SHIB-USDT\",\"KDA-USDT\",\"KDA-BTC\",\"ICP-USDT\",\"ICP-BTC\",\"CELO-USDT\",\"CELO-BTC\",\"ELA-USDT\",\"OGN-USDT\",\"OGN-BTC\",\"OUSD-USDT\",\"OUSD-BTC\",\"TLOS-USDT\",\"TLOS-BTC\",\"GLQ-USDT\",\"GLQ-BTC\",\"MXC-USDT\",\"HOTCROSS-USDT\",\"ADA3L-USDT\",\"ADA3S-USDT\",\"HYVE-USDT\",\"HYVE-BTC\",\"DAPPX-USDT\",\"PRQ-USDT\",\"MAHA-USDT\",\"FEAR-USDT\",\"PYR-USDT\",\"PYR-BTC\",\"PROM-USDT\",\"PROM-BTC\",\"UNO-USDT\",\"XCAD-USDT\",\"EOS3L-USDT\",\"EOS3S-USDT\",\"BCH3L-USDT\",\"BCH3S-USDT\",\"ELON-USDT\",\"POLS-USDT\",\"LPOOL-USDT\",\"LSS-USDT\",\"VET3L-USDT\",\"VET3S-USDT\",\"LTC3L-USDT\",\"LTC3S-USDT\",\"ABBC-USDT\",\"ABBC-BTC\",\"ZCX-USDT\",\"GMEE-USDT\",\"SFUND-USDT\",\"XAVA-USDT\",\"IOI-USDT\",\"NFT-USDT\",\"NFT-TRX\",\"AIOZ-USDT\",\"MARSH-USDT\",\"HAPI-USDT\",\"LPT-USDT\",\"BOND-USDT\",\"HAI-BTC\",\"SOUL-USDT\",\"NEAR-USDT\",\"NEAR-BTC\",\"DFYN-USDT\",\"OOE-USDT\",\"CFG-USDT\",\"AXS-USDT\",\"CLV-USDT\",\"ROUTE-USDT\",\"XDC-BTC\",\"DPET-USDT\",\"ERG-USDT\",\"ERG-BTC\",\"SOL-USDT\",\"SLP-USDT\",\"LITH-USDT\",\"XCH-USDT\",\"MTL-USDT\",\"MTL-BTC\",\"IOTX-USDT\",\"GALAX-USDT\",\"REQ-USDT\",\"CIRUS-USDT\",\"QI-USDT\",\"ODDZ-USDT\",\"XPR-USDT\",\"XPR-BTC\",\"MOVR-USDT\",\"MOVR-ETH\",\"WOO-USDT\",\"WILD-USDT\",\"OXT-USDT\",\"OXT-ETH\",\"BAL-USDT\",\"BAL-BTC\",\"STORJ-USDT\",\"STORJ-BTC\",\"STORJ-ETH\",\"YGG-USDT\",\"SDAO-USDT\",\"SDAO-ETH\",\"XRP3L-USDT\",\"XRP3S-USDT\",\"SKL-USDT\",\"SKL-BTC\",\"NMR-USDT\",\"TRB-USDT\",\"TRB-BTC\",\"DYDX-USDT\",\"XYO-USDT\",\"GTC-USDT\",\"GTC-BTC\",\"EQX-USDT\",\"RLC-USDT\",\"RLC-BTC\",\"XPRT-USDT\",\"EGLD-USDT\",\"EGLD-BTC\",\"HBAR-USDT\",\"HBAR-BTC\",\"DOGE3L-USDT\",\"DOGE3S-USDT\",\"FLOW-USDT\",\"FLOW-BTC\",\"NKN-USDT\",\"NKN-BTC\",\"PBX-USDT\",\"SOL3L-USDT\",\"SOL3S-USDT\",\"XNL-USDT\",\"SOLVE-USDT\",\"DMTR-USDT\",\"LINK3L-USDT\",\"LINK3S-USDT\",\"DOT3L-USDT\",\"DOT3S-USDT\",\"CTSI-USDT\",\"CTSI-BTC\",\"ALICE-USDT\",\"ALICE-BTC\",\"ALICE-ETH\",\"OPUL-USDT\",\"ILV-USDT\",\"BAND-USDT\",\"BAND-BTC\",\"FTT-USDT\",\"FTT-BTC\",\"DVPN-USDT\",\"SLIM-USDT\",\"TLM-USDT\",\"TLM-ETH\",\"DEXE-USDT\",\"DEXE-BTC\",\"RUNE-USDT\",\"RUNE-BTC\",\"C98-USDT\",\"BLOK-USDT\",\"ATOM3L-USDT\",\"ATOM3S-USDT\",\"UNI3L-USDT\",\"UNI3S-USDT\",\"PUSH-USDT\",\"PUSH-BTC\",\"AXS3L-USDT\",\"AXS3S-USDT\",\"FTM3L-USDT\",\"FTM3S-USDT\",\"FLAME-USDT\",\"AGLD-USDT\",\"NAKA-USDT\",\"REEF-USDT\",\"REEF-BTC\",\"TIDAL-USDT\",\"INJ-USDT\",\"INJ-BTC\",\"BNB3L-USDT\",\"BNB3S-USDT\",\"ALPHA-USDT\",\"ALPHA-BTC\",\"UNO-BTC\",\"AR-USDT\",\"AR-BTC\",\"JASMY-USDT\",\"PERP-USDT\",\"PERP-BTC\",\"SCLP-USDT\",\"SUPER-USDT\",\"SUPER-BTC\",\"CPOOL-USDT\",\"AURY-USDT\",\"SWASH-USDT\",\"LTO-USDT\",\"LTO-BTC\",\"MTRG-USDT\",\"DREAMS-USDT\",\"SHIB-DOGE\",\"QUICK-USDT\",\"TRU-USDT\",\"TRU-BTC\",\"WRX-USDT\",\"WRX-BTC\",\"SUSHI3L-USDT\",\"SUSHI3S-USDT\",\"NEAR3L-USDT\",\"NEAR3S-USDT\",\"DATA-USDT\",\"DATA-BTC\",\"ISP-USDT\",\"CERE-USDT\",\"ERN-USDT\",\"PAXG-USDT\",\"PAXG-BTC\",\"AUDIO-USDT\",\"AUDIO-BTC\",\"ENS-USDT\",\"AAVE3L-USDT\",\"AAVE3S-USDT\",\"SAND3L-USDT\",\"SAND3S-USDT\",\"XTM-USDT\",\"MNW-USDT\",\"FXS-USDT\",\"FXS-BTC\",\"ATA-USDT\",\"VXV-USDT\",\"LRC-BTC\",\"LRC-ETH\",\"DPR-USDT\",\"FLUX-BTC\",\"PBR-USDT\",\"TWT-USDT\",\"TWT-BTC\",\"OM-USDT\",\"OM-BTC\",\"ADX-USDT\",\"AVAX3L-USDT\",\"AVAX3S-USDT\",\"MANA3L-USDT\",\"MANA3S-USDT\",\"GLM-USDT\",\"GLM-BTC\",\"NUM-USDT\",\"TRADE-USDT\",\"MONI-USDT\",\"LIKE-USDT\",\"LIT-USDT\",\"LIT-BTC\",\"KAVA-USDT\",\"SFP-USDT\",\"SFP-BTC\",\"BURGER-USDT\",\"CREAM-USDT\",\"RSR-USDT\",\"RSR-BTC\",\"IMX-USDT\",\"GODS-USDT\",\"POLC-USDT\",\"XTAG-USDT\",\"NGC-USDT\",\"HARD-USDT\",\"GALAX3L-USDT\",\"GALAX3S-USDT\",\"POND-USDT\",\"POND-BTC\",\"VR-USDT\",\"EPIK-USDT\",\"NGL-USDT\",\"LINA-USDT\",\"LINA-BTC\",\"CREDI-USDT\",\"TRVL-USDT\",\"BONDLY-USDT\",\"BONDLY-ETH\",\"XEC-USDT\",\"HEART-USDT\",\"UNB-USDT\",\"GAFI-USDT\",\"UFO-USDT\",\"CHMB-USDT\",\"GEEQ-USDT\",\"PEOPLE-USDT\",\"ADS-USDT\",\"WHALE-USDT\",\"TIME-USDT\",\"CWEB-USDT\",\"IOTA-USDT\",\"IOTA-BTC\",\"HNT-USDT\",\"HNT-BTC\",\"GGG-USDT\",\"REVU-USDT\",\"CLH-USDT\",\"GLMR-USDT\",\"GLMR-BTC\",\"CTC-USDT\",\"GARI-USDT\",\"ASTR-USDT\",\"ASTR-BTC\",\"ERTHA-USDT\",\"FCON-USDT\",\"MTS-USDT\",\"HBB-USDT\",\"CVX-USDT\",\"AMP-USDT\",\"MJT-USDT\",\"XNO-USDT\",\"XNO-BTC\",\"MARS4-USDT\",\"TFUEL-USDT\",\"TFUEL-BTC\",\"METIS-USDT\",\"BULL-USDT\",\"SON-USDT\",\"MELOS-USDT\",\"APE-USDT\",\"GMT-USDT\",\"BICO-USDT\",\"STG-USDT\",\"LMR-USDT\",\"LOKA-USDT\",\"JAM-USDT\",\"JAM-ETH\",\"BNC-USDT\",\"LBP-USDT\",\"CFX-USDT\",\"LOOKS-USDT\",\"XCN-USDT\",\"XCN-BTC\",\"UPO-USDT\",\"CEEK-USDT\",\"VEMP-USDT\",\"VISION-USDT\",\"ALPINE-USDT\",\"WOOP-USDT\",\"T-USDT\",\"NYM-USDT\",\"VOXEL-USDT\",\"PSTAKE-USDT\",\"SPA-USDT\",\"DAR-USDT\",\"MV-USDT\",\"RACA-USDT\",\"XWG-USDT\",\"TRVL-BTC\",\"SWFTC-USDT\",\"BRWL-USDT\",\"CELR-USDT\",\"AURORA-USDT\",\"KNC-USDT\",\"OVR-USDT\",\"SYS-USDT\",\"BRISE-USDT\",\"EPX-USDT\",\"GST-USDT\",\"BSW-USDT\",\"FITFI-USDT\",\"H2O-USDT\",\"GMM-USDT\",\"AKT-USDT\",\"SIN-USDT\",\"BOBA-USDT\",\"BFC-USDT\",\"BIFI-USDT\",\"MBL-USDT\",\"DUSK-USDT\",\"USDD-USDT\",\"USDD-USDC\",\"APE-USDC\",\"AVAX-USDC\",\"SHIB-USDC\",\"TRX-USDC\",\"NEAR-USDC\",\"FTM-USDC\",\"ZIL-USDC\",\"SOL-USDC\",\"ACH-USDT\",\"SCRT-USDT\",\"SCRT-BTC\",\"APE3L-USDT\",\"APE3S-USDT\",\"STORE-USDT\",\"GMT3L-USDT\",\"GMT3S-USDT\",\"CCD-USDT\",\"LUNC-USDT\",\"LUNC-USDC\",\"USTC-USDT\",\"USTC-USDC\",\"GMT-USDC\",\"VRA-USDC\",\"DOT-USDC\",\"RUNE-USDC\",\"ATOM-USDC\",\"BNB-USDC\",\"JASMY-USDC\",\"KCS-USDC\",\"KDA-USDC\",\"ALGO-USDC\",\"LUNA-USDC\",\"OP-USDT\",\"OP-USDC\",\"JASMY3L-USDT\",\"JASMY3S-USDT\",\"EVER-USDT\",\"ICX-USDT\",\"ICX-ETH\",\"BTC-BRL\",\"ETH-BRL\",\"USDT-BRL\",\"WELL-USDT\",\"FORT-USDT\",\"USDP-USDT\",\"USDD-TRX\",\"BTC-EUR\",\"ETH-EUR\",\"USDT-EUR\",\"CSPR-USDT\",\"CSPR-ETH\",\"WEMIX-USDT\",\"REV3L-USDT\",\"OLE-USDT\",\"LDO-USDT\",\"LDO-USDC\",\"FIDA-USDT\",\"FT-USDT\",\"ETC-USDC\",\"DC-USDT\",\"RVN-USDT\",\"SWEAT-USDT\",\"PIX-USDT\",\"MPLX-USDT\",\"ETHW-USDT\",\"ACQ-USDT\",\"AOG-USDT\",\"PUMLX-USDT\",\"XETA-USDT\",\"KICKS-USDT\",\"TRIBL-USDT\",\"GMX-USDT\",\"POKT-USDT\",\"APT-USDT\",\"EUL-USDT\",\"TON-USDT\",\"XCV-USDT\",\"HFT-USDT\",\"HFT-USDC\",\"ECOX-USDT\",\"AMB-USDT\",\"AZERO-USDT\",\"BEAT-USDT\",\"NAVI-USDT\",\"OAS-USDT\",\"BDX-USDT\",\"BDX-BTC\",\"FLR-USDT\",\"FLR-USDC\",\"OSMO-USDT\",\"MAGIC-USDT\",\"RPL-USDT\",\"KING-USDT\",\"SHIB2L-USDT\",\"SHIB2S-USDT\",\"HIGH-USDT\",\"HIGH-ETH\",\"TRAC-USDT\",\"GFT-USDT\",\"GFT-BTC\",\"BLUR-USDT\",\"WAXL-USDT\",\"FLOKI-USDT\",\"SSV-USDT\",\"FLOKI-USDC\",\"ACS-USDT\",\"IGU-USDT\",\"CSIX-USDT\",\"FET-USDT\",\"CSIX-ETH\",\"CFX2L-USDT\",\"CFX2S-USDT\",\"SIDUS-USDT\",\"GOAL-USDT\",\"AIPAD-USDT\",\"RDNT-USDT\",\"SYN-USDT\",\"GNS-USDT\",\"GRAIL-USDT\",\"BLZ-USDT\",\"HALO-USDT\",\"NXRA-USDT\",\"MINA-USDT\",\"XRD-USDT\",\"LQTY-USDT\",\"CFX-BTC\",\"CFX-ETH\",\"ID-USDT\",\"ARB-USDT\",\"ARB3S-USDT\",\"ARB3L-USDT\",\"ID3L-USDT\",\"ID3S-USDT\",\"HMND-USDT\",\"BTCUP-USDT\",\"BTCDOWN-USDT\",\"ETHUP-USDT\",\"ETHDOWN-USDT\",\"HIFI-USDT\",\"MYRIA-USDT\",\"SD-USDT\",\"CGPT-USDT\",\"STRAX-USDT\",\"KAGI-USDT\",\"DYDXUP-USDT\",\"DYDXDOWN-USDT\",\"OTK-USDT\",\"BABYDOGE-USDT\",\"PZP-USDT\",\"INJDOWN-USDT\",\"INJUP-USDT\",\"LOCUS-USDT\",\"ZPAY-USDT\",\"IZI-USDT\",\"SUI-USDT\",\"SUI3S-USDT\",\"SUI3L-USDT\",\"KAS-USDT\",\"PEPE-USDT\",\"PEPEUP-USDT\",\"PEPEDOWN-USDT\",\"CETUS-USDT\",\"SUIP-USDT\",\"KARATE-USDT\",\"WLKN-USDT\",\"TURBOS-USDT\",\"LUNCUP-USDT\",\"LUNCDOWN-USDT\",\"SUIA-USDT\",\"LMWR-USDT\",\"BOB-USDT\",\"LADYS-USDT\",\"TENET-USDT\",\"VERSE-USDT\",\"OBI-USDT\",\"INFRA-USDT\",\"TSUGT-USDT\",\"EDU-USDT\",\"ORDI-USDT\",\"LAI-USDT\",\"VOLT-USDT\",\"TOMI-USDT\",\"COMBO-USDT\",\"CANDY-USDT\",\"PIP-USDT\",\"MAV-USDT\",\"XEN-USDT\",\"LBR-USDT\",\"PENDLE-USDT\",\"EGO-USDT\",\"PEPE2-USDT\",\"DCK-USDT\",\"LYX-USDT\",\"LYX-ETH\",\"WLD-USDT\",\"WLDUP-USDT\",\"WLDDOWN-USDT\",\"AIEPK-USDT\",\"SEI-USDT\",\"PYUSD-USDT\",\"ISLM-USDT\",\"TRBUP-USDT\",\"TRBDOWN-USDT\",\"BIGTIME-USDT\",\"NTRN-USDT\",\"ARKM-USDT\",\"VRAUP-USDT\",\"VRADOWN-USDT\",\"OFN-USDT\",\"ZELIX-USDT\",\"TIA-USDT\",\"CYBER-USDT\",\"MEME-USDT\",\"TOKEN-USDT\",\"SHRAP-USDT\",\"ORDIUP-USDT\",\"ORDIDOWN-USDT\",\"POL-USDT\",\"SATS-USDT\",\"RPK-USDT\",\"PYTH-USDT\",\"RATS-USDT\",\"VRTX-USDT\",\"ROOT-USDT\",\"WBTC-USDT\",\"LOOM-USDT\",\"ELF-USDT\",\"DCR-USDT\",\"ZRX-USDT\",\"KASUP-USDT\",\"KASDOWN-USDT\",\"TIAUP-USDT\",\"TIADOWN-USDT\",\"PYTHUP-USDT\",\"PYTHDOWN-USDT\",\"FLIP-USDT\",\"UQC-USDT\",\"LSK-USDT\",\"DENT-USDT\",\"QKC-USDT\",\"BONK-USDT\",\"MIND-USDT\",\"MNT-USDT\",\"WORK-USDT\",\"INSP-USDT\",\"AUCTION-USDT\",\"JTO-USDT\",\"BAKEUP-USDT\",\"BAKEDOWN-USDT\",\"UTK-USDT\",\"SNS-USDT\",\"DOVI-USDT\",\"SEAM-USDT\",\"FINC-USDT\",\"VANRY-USDT\",\"GTT-USDT\",\"MNDE-USDT\",\"COQ-USDT\",\"IRL-USDT\",\"POLYX-USDT\",\"SCPT-USDT\",\"TAO-USDT\",\"TURT-USDT\",\"ARTY-USDT\",\"GRAPE-USDT\",\"MUBI-USDT\",\"AA-USDT\",\"ANALOS-USDT\",\"SEIUP-USDT\",\"SEIDOWN-USDT\",\"OPUP-USDT\",\"OPDOWN-USDT\",\"MYRO-USDT\",\"SILLY-USDT\",\"MOBILE-USDT\",\"1CAT-USDT\",\"RAY-USDT\",\"ALEX-USDT\",\"ZKF-USDT\",\"XAI-USDT\",\"NFP-USDT\",\"ORCA-USDT\",\"KACE-USDT\",\"APP-USDT\",\"NEON-USDT\",\"ISSP-USDT\",\"BIDP-USDT\",\"TUNE-USDT\",\"MANTA-USDT\",\"ONDO-USDT\",\"WIF-USDT\",\"SAROS-USDT\",\"AMU-USDT\",\"GTAI-USDT\",\"KALT-USDT\",\"DMAIL-USDT\",\"AFG-USDT\",\"WEN-USDT\",\"ZETA-USDT\",\"DEFI-USDT\",\"PMG-USDT\",\"JUP-USDT\",\"FIRE-USDT\",\"STRIKE-USDT\",\"MXM-USDT\",\"BMX-USDT\",\"MAVIA-USDT\",\"FORWARD-USDT\",\"DYM-USDT\",\"NETVR-USDT\",\"NAVX-USDT\",\"LENDS-USDT\",\"PIXEL-USDT\",\"STRK-USDT\",\"BCUT-USDT\",\"TADA-USDT\",\"SLN-USDT\",\"PANDORA-USDT\",\"DECHAT-USDT\",\"BBL-USDT\",\"ICE-USDT\",\"PORTAL-USDT\",\"QORPO-USDT\",\"STAMP-USDT\",\"KAS-BTC\",\"AEG-USDT\",\"TUSD-USDT\",\"SCA-USDT\",\"PATEX-USDT\",\"NIBI-USDT\",\"ISME-USDT\",\"KNGL-USDT\",\"AEVO-USDT\",\"ZEND-USDT\",\"HTX-USDT\",\"AITECH-USDT\",\"BOME-USDT\",\"ETHFI-USDT\",\"MPC-USDT\",\"ZKJ-USDT\",\"BEFI-USDT\",\"GMRX-USDT\",\"BRAWL-USDT\",\"SMOLE-USDT\",\"VENOM-USDT\",\"ENA-USDT\",\"USDE-USDT\",\"W-USDT\",\"MEW-USDT\",\"ZEUS-USDT\",\"AERO-USDT\",\"TRUF-USDT\",\"G3-USDT\",\"TNSR-USDT\",\"ESE-USDT\",\"BLOCK-USDT\",\"MASA-USDT\",\"SQR-USDT\",\"FOXY-USDT\",\"ARC-USDT\",\"OMNI-USDT\",\"PRCL-USDT\",\"MAPO-USDT\",\"MERL-USDT\",\"DEGEN-USDT\",\"KARRAT-USDT\",\"VINU-USDT\",\"SPOT-USDT\",\"LL-USDT\",\"PBUX-USDT\",\"SAFE-USDT\",\"HIP-USDT\",\"RIO-USDT\",\"REZ-USDT\",\"KMNO-USDT\",\"ZBCN-USDT\",\"MANEKI-USDT\",\"ZERO-USDT\",\"WSDM-USDT\",\"BB-USDT\",\"LFT-USDT\",\"CTA-USDT\",\"DRIFT-USDT\",\"FURY-USDT\",\"NLK-USDT\",\"NOT-USDT\",\"SQD-USDT\",\"USDT-TRY\",\"HLG-USDT\",\"MON-USDT\",\"ZERC-USDT\",\"OPEN-USDT\",\"WLTH-USDT\",\"NEXG-USDT\",\"GAME-USDT\",\"TAIKO-USDT\",\"ULTI-USDT\",\"LKI-USDT\",\"BRETT-USDT\",\"IO-USDT\",\"UNA-USDT\",\"ATH-USDT\",\"BEER-USDT\",\"COOKIE-USDT\",\"ARTFI-USDT\",\"ZK-USDT\",\"OORT-USDT\",\"ZRO-USDT\",\"LISTA-USDT\",\"SMH-USDT\",\"NRN-USDT\",\"BLAST-USDT\",\"TST-USDT\",\"ZEX-USDT\",\"NATIX-USDT\",\"DOCK-USDT\",\"MOG-USDT\",\"DOP-USDT\",\"XR-USDT\",\"MOCA-USDT\",\"UXLINK-USDT\",\"ANYONE-USDT\",\"ZKL-USDT\",\"BANANA-USDT\",\"OPAI-USDT\",\"AVAIL-USDT\",\"LRDS-USDT\",\"SYNT-USDT\",\"DOAI-USDT\",\"LSD-USDT\",\"MOXIE-USDT\",\"L3-USDT\",\"CXT-USDT\",\"MAX-USDT\",\"G-USDT\",\"BN-USDT\",\"RENDER-USDT\",\"CAT-USDT\",\"POPCAT-USDT\",\"FX-USDT\",\"DOGS-USDT\",\"ORDER-USDT\",\"REDO-USDT\",\"SUNDOG-USDT\",\"ROOBEE-USDT\",\"MAK-USDT\",\"SLF-USDT\",\"CATI-USDT\",\"NOTAI-USDT\",\"TURBO-USDT\",\"NEIRO-USDT\",\"NEIROCTO-USDT\",\"SKY-USDT\",\"WAT-USDT\",\"RBTC1-USDT\",\"LOGX-USDT\",\"SOCIAL-USDT\",\"UNIO-USDT\",\"EGP-USDT\",\"HMSTR-USDT\",\"LAY3R-USDT\",\"DAPP-USDT\",\"MOODENG-USDT\",\"FTON-USDT\",\"EIGEN-USDT\",\"BABYBNB-USDT\",\"CATS-USDT\",\"CHO-USDT\",\"PONKE-USDT\",\"CARV-USDT\",\"HIPPO-USDT\",\"PUFFER-USDT\",\"WMTX-USDT\",\"DEEP-USDT\",\"RMV-USDT\",\"OMNIA-USDT\",\"DBR-USDT\",\"X-USDT\",\"TAP-USDT\",\"NAYM-USDT\",\"SCR-USDT\",\"CROS-USDT\",\"USDC-EUR\",\"GOAT-USDT\",\"GRASS-USDT\",\"GODL-USDT\",\"PHIL-USDT\",\"KAIA-USDT\",\"ARCA-USDT\",\"PGC-USDT\",\"ACTSOL-USDT\",\"CTRL-USDT\",\"SMILE-USDT\",\"COW-USDT\",\"SWELL-USDT\",\"CVC-USDT\",\"KEY-USDT\",\"PEAQ-USDT\",\"LUCE-USDT\",\"PNUT-USDT\",\"NOOB-USDT\",\"NS-USDT\",\"MICHI-USDT\",\"NPC-USDT\"],\"restApiNameList\":[\"/api/v1/hf/orders\",\"/api/v1/hf/orders/client-order/{clientOid}\"]}"
-
-	err = conn.WriteMessage(websocket.TextMessage, []byte(message))
-	log.Printf("Sent to server: %s", message)
-	if err != nil {
-		log.Println("Write error:", err)
-		time.Sleep(1000000000 * time.Second) // 暂停 10 秒
-		return
-	}
-	time.Sleep(1000000000 * time.Second) // 暂停 10 秒
-	log.Printf("Sent to server: %s", message)
-	// }
+type GenericData struct {
+	Data struct {
+		TimestampNano int64 `json:"ts"`
+		Timestamp     int64 `json:"timestamp"`
+	} `json:"data"`
 }
 
-// futures 全币对
-// [XBTUSDTM, ETHUSDTM, SOLUSDTM, WIFUSDTM, PEPEUSDTM, DOGEUSDTM, XRPUSDTM, 1000000MOGUSDTM, 10000CATUSDTM, 10000COQUSDTM, 10000LADYSUSDTM, 10000SATSUSDTM, 10000WENUSDTM, 1000BONKUSDTM, 1000PEPE2USDTM, 1000RATSUSDTM, 1000XUSDTM, 1INCHUSDTM, AAVEUSDTM, ACEUSDTM, ACHUSDTM, ACTSOLUSDTM, ADAUSDTM, AEVOUSDTM, AGIUSDTM, AGLDUSDTM, AIUSDTM, ALGOUSDTM, ALICEUSDTM, ALPACAUSDTM, ALPHAUSDTM, ALTUSDTM, AMBUSDTM, ANKRUSDTM, APEUSDTM, API3USDTM, APTUSDTM, ARBUSDTM, ARKMUSDTM, ARKUSDTM, ARPAUSDTM, ARUSDTM, ASTRUSDTM, ATHUSDTM, ATOMUSDTM, AUCTIONUSDTM, AUDIOUSDTM, AVAILUSDTM, AVAXUSDTM, AXLUSDTM, AXSUSDTM, BABYBNBUSDTM, BADGERUSDTM, BAKEUSDTM, BALUSDTM, BANANAUSDTM, BANDUSDTM, BANUSDTM, BATUSDTM, BBUSDTM, BCHUSDTM, BELUSDTM, BIGTIMEUSDTM, BLASTUSDTM, BLURUSDTM, BLZUSDTM, BNBUSDTM, BNTUSDTM, BOBUSDTM, BOMEUSDTM, BONDUSDTM, BRETTUSDTM, BSVUSDTM, C98USDTM, CAKEUSDTM, CARVUSDTM, CATIUSDTM, CATSUSDTM, CELOUSDTM, CELRUSDTM, CETUSUSDTM, CFXUSDTM, CHILLGUYUSDTM, CHRUSDTM, CHZUSDTM, CKBUSDTM, COMBOUSDTM, COMPUSDTM, COTIUSDTM, COWUSDTM, CROUSDTM, CRVUSDTM, CTSIUSDTM, CVCUSDTM, CVXUSDTM, CYBERUSDTM, DARUSDTM, DASHUSDTM, DEEPUSDTM, DEGENUSDTM, DENTUSDTM, DODOUSDTM, DOGSUSDTM, DOGUSDTM, DOTUSDM, DOTUSDTM, DRIFTUSDTM, DUSKUSDTM, DYDXUSDTM, DYMUSDTM, EDUUSDTM, EGLDUSDTM, EIGENUSDTM, ENAUSDTM, ENJUSDTM, ENSUSDTM, EOSUSDTM, ETCUSDTM, ETHFIUSDTM, ETHUSDCM, ETHUSDM, FETUSDTM, FILUSDTM, FLMUSDTM, FLOKIUSDTM, FLOWUSDTM, FLUXUSDTM, FTMUSDTM, FTTUSDTM, FXSUSDTM, GALAUSDTM, GASUSDTM, GLMRUSDTM, GMTUSDTM, GMXUSDTM, GOATUSDTM, GRASSUSDTM, GRTUSDTM, GTCUSDTM, GUSDTM, HBARUSDTM, HFTUSDTM, HIFIUSDTM, HIGHUSDTM, HIPPOUSDTM, HMSTRUSDTM, HOOKUSDTM, HOTUSDTM, HSKUSDTM, ICPUSDTM, ICXUSDTM, IDUSDTM, ILVUSDTM, IMXUSDTM, INJUSDTM, IOTAUSDTM, IOTXUSDTM, IOUSDTM, JASMYUSDTM, JOEUSDTM, JTOUSDTM, JUPUSDTM, KASUSDTM, KAVAUSDTM, KDAUSDTM, KEYUSDTM, KNCUSDTM, KSMUSDTM, LDOUSDTM, LEVERUSDTM, LINAUSDTM, LINKUSDTM, LISTAUSDTM, LITUSDTM, LOOKSUSDTM, LPTUSDTM, LQTYUSDTM, LRCUSDTM, LTCUSDTM, LUNAUSDTM, LUNCUSDTM, MAGICUSDTM, MAJORUSDTM, MANAUSDTM, MANTAUSDTM, MASKUSDTM, MAVIAUSDTM, MAVUSDTM, MAXUSDTM, MBOXUSDTM, MDTUSDTM, MEMEFIUSDTM, MEMEUSDTM, MERLUSDTM, METISUSDTM, MEWUSDTM, MINAUSDTM, MKRUSDTM, MOCAUSDTM, MOODENGUSDTM, MORPHOUSDTM, MOVRUSDTM, MTLUSDTM, MYROUSDTM, NAKAUSDTM, NEARUSDTM, NEIROCTOUSDTM, NEIROUSDTM, NEOUSDTM, NFPUSDTM, NKNUSDTM, NMRUSDTM, NOTUSDTM, NTRNUSDTM, OGNUSDTM, OMGUSDTM, OMNIUSDTM, OMUSDTM, ONDOUSDTM, ONEUSDTM, ONTUSDTM, OPUSDTM, ORBSUSDTM, ORDIUSDTM, OXTUSDTM, PAXGUSDTM, PENDLEUSDTM, PEOPLEUSDTM, PERPUSDTM, PHBUSDTM, PIXELUSDTM, PNUTUSDTM, POLUSDTM, POLYXUSDTM, PONKEUSDTM, POPCATUSDTM, PORTALUSDTM, POWRUSDTM, PRCLUSDTM, PUFFERUSDTM, PYTHUSDTM, QNTUSDTM, QTUMUSDTM, RAREUSDTM, RAYUSDTM, RDNTUSDTM, REEFUSDTM, RENDERUSDTM, RENUSDTM, REZUSDTM, RIFUSDTM, RONUSDTM, ROSEUSDTM, RSRUSDTM, RUNEUSDTM, RVNUSDTM, SAGAUSDTM, SANDUSDTM, SCRUSDTM, SEIUSDTM, SFPUSDTM, SHIBUSDTM, SKLUSDTM, SLERFUSDTM, SMILEUSDTM, SNXUSDTM, SOLUSDM, SPELLUSDTM, SSVUSDTM, STEEMUSDTM, STGUSDTM, STMXUSDTM, STORJUSDTM, STRKUSDTM, STXUSDTM, SUIUSDTM, SUNDOGUSDTM, SUNUSDTM, SUPERUSDTM, SUSHIUSDTM, SWELLUSDTM, SXPUSDTM, TAIKOUSDTM, TAOUSDTM, THETAUSDTM, THEUSDTM, TIAUSDTM, TNSRUSDTM, TOKENUSDTM, TONUSDTM, TRBUSDTM, TRUUSDTM, TRXUSDTM, TURBOUSDTM, TUSDTM, TWTUSDTM, ULTIUSDTM, UMAUSDTM, UNFIUSDTM, UNIUSDTM, USDCUSDTM, USTCUSDTM, UXLINKUSDTM, VANRYUSDTM, VETUSDTM, VIDTUSDTM, VIRTUALUSDTM, VRAUSDTM, WAVESUSDTM, WAXPUSDTM, WLDUSDTM, WOOUSDTM, WUSDTM, XAIUSDTM, XBTMZ24, XBTUSDCM, XBTUSDM, XCNUSDTM, XECUSDTM, XEMUSDTM, XLMUSDTM, XMRUSDTM, XRPUSDM, XTZUSDTM, XVGUSDTM, XVSUSDTM, YFIUSDTM, YGGUSDTM, ZECUSDTM, ZETAUSDTM, ZEUSUSDTM, ZILUSDTM, ZKUSDTM, ZRCUSDTM, ZROUSDTM, ZRXUSDTM]
+func pingWebSocket(endpoint string) {
+	c, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	defer c.Close()
+
+	_, _, err = c.ReadMessage()
+	if err != nil {
+		log.Println("read:", err)
+		return
+	}
+
+	streamType := "ping"
+	msg := map[string]interface{}{
+		"type": "ping",
+	}
+	done := make(chan struct{})
+	defer close(done)
+
+	ticker := time.NewTicker(1 * time.Second) // Triggers every second
+	defer ticker.Stop()
+
+	pingTicker := time.NewTicker(500 * time.Millisecond) // Triggers twice every second
+	defer pingTicker.Stop()
+
+	timestamps := make(chan time.Time, 100)
+	defer close(timestamps)
+	go handleLatency(timestamps, done, ticker, streamType) // Start the routine to calculate latency
+
+	for {
+		select {
+		case <-pingTicker.C:
+			startTime := time.Now() // Get the current time before sending the ping
+
+			if err := c.WriteJSON(msg); err != nil {
+				log.Fatal("write:", err)
+			}
+
+			_, _, err := c.ReadMessage()
+			if err != nil {
+				log.Println("read:", err)
+				return
+			}
+			timestamps <- startTime // Send the time of sending the ping
+		}
+	}
+}
+
+func connectWebSocket(endpoint, topic, streamType string, extractTimestamp func([]byte) (time.Time, error)) {
+	c, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	defer c.Close()
+
+	_, _, err = c.ReadMessage()
+	if err != nil {
+		log.Println("read:", err)
+		return
+	}
+
+	done := make(chan struct{})
+	defer close(done)
+	ticker := time.NewTicker(1 * time.Second) // Triggers every second
+	defer ticker.Stop()
+
+	pingTicker := time.NewTicker(time.Duration(token.Result.Data.InstanceServers[0].PingInterval) * time.Millisecond)
+	defer pingTicker.Stop()
+
+	timestamps := make(chan time.Time, 100) // Channel to hold timestamps
+	defer close(timestamps)
+	messages := make(chan []byte, 100)
+	defer close(messages)
+	go handleLatency(timestamps, done, ticker, streamType) // Handle latency in separate goroutine
+
+	subscribe(c, topic) // Subscribe to the topic
+
+	go func() {
+		for {
+			_, message, err := c.ReadMessage()
+			if err != nil {
+				log.Println("read:", err)
+				return
+			}
+			messages <- message
+		}
+	}()
+
+	go func() {
+		for msg := range messages {
+			ts, err := extractTimestamp(msg)
+			if err != nil {
+				// log.Printf("Error extracting timestamp: %v", err)
+				continue
+			}
+			timestamps <- ts
+		}
+	}()
+
+	for {
+		select {
+		case <-pingTicker.C:
+			if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Println("ping:", err)
+				return
+			}
+		}
+	}
+}
+
+func handleLatency(timestamps chan time.Time, done chan struct{}, ticker *time.Ticker, streamType string) {
+	var totalLatency time.Duration
+	var count int
+	for {
+		select {
+		case <-done:
+			return
+		case t := <-timestamps:
+			latency := time.Since(t)
+			totalLatency += latency
+			count++
+		case <-ticker.C:
+			if count > 0 {
+				avgLatency := totalLatency / time.Duration(count)
+				// single way of latency
+				if streamType == "ping" {
+					avgLatency = avgLatency / 2
+				}
+				log.Printf("%s: Average latency (per second): %v, count: %v", streamType, avgLatency, count)
+				totalLatency = 0
+				count = 0
+			}
+		}
+	}
+}
+
+func subscribe(c *websocket.Conn, topic string) {
+	msg := map[string]interface{}{
+		"type":  "subscribe",
+		"topic": topic,
+	}
+	if err := c.WriteJSON(msg); err != nil {
+		log.Fatal("write:", err)
+	}
+}
+
+// execution use mirco timestamp
+func extractTSMill(message []byte) (time.Time, error) {
+	var msg GenericData
+	if err := json.Unmarshal(message, &msg); err != nil {
+		return time.Time{}, err
+	}
+	if msg.Data.TimestampNano == 0 {
+		return time.Time{}, fmt.Errorf("invalid ts timestamp")
+	}
+	return time.Unix(0, msg.Data.TimestampNano*int64(time.Millisecond)), nil
+}
+
+func extractTS(message []byte) (time.Time, error) {
+	var msg GenericData
+	if err := json.Unmarshal(message, &msg); err != nil {
+		return time.Time{}, err
+	}
+	if msg.Data.TimestampNano == 0 {
+		return time.Time{}, fmt.Errorf("invalid ts timestamp")
+	}
+	return time.Unix(0, msg.Data.TimestampNano), nil
+}
+
+func extractTimestamp(message []byte) (time.Time, error) {
+	var msg GenericData
+	if err := json.Unmarshal(message, &msg); err != nil {
+		return time.Time{}, err
+	}
+	if msg.Data.Timestamp == 0 {
+		return time.Time{}, fmt.Errorf("invalid timestamp")
+	}
+	return time.Unix(0, msg.Data.Timestamp*int64(time.Millisecond)), nil
+}
+
+func main() {
+	endpoint, _, err := token.GetToken()
+	if err != nil {
+		log.Fatal("Error fetching token:", err)
+	}
+	go pingWebSocket(endpoint)
+	go connectWebSocket(endpoint, "/contractMarket/tickerV2:XBTUSDTM", "tickerV2", extractTS)
+	go connectWebSocket(endpoint, "/contractMarket/level2:XBTUSDTM", "level2", extractTimestamp)
+	go connectWebSocket(endpoint, "/contractMarket/execution:XBTUSDTM", "execution", extractTS)
+	go connectWebSocket(endpoint, "/contractMarket/level2Depth5:XBTUSDTM", "level2Depth5", extractTSMill)
+
+	select {}
+}
