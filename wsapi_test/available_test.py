@@ -21,7 +21,7 @@ def parse_arguments():
     return parser.parse_args()
 
 SEND_TIMES = 100
-passphrase = "a123456"
+passphrase = ""
 
 order_receive = 0
 cancel_send = 0
