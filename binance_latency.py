@@ -13,8 +13,8 @@ import websocket
 from websocket import WebSocketApp
 
 # Binance API 配置
-API_KEY = "vEaHAma8BYp6FCnI9LWQxnjFpehjjsBVnmvsVoIXrQNbh44JLY7z1e5V5fTvDNzF"
-API_SECRET = "fl3TY42WlHY8XQhxSrh6LLPa4E4x60mtKm1D8efrUnCW94QK2NAMefYeOD750nF5"
+API_KEY = ""
+API_SECRET = ""
 WS_STREAM_URL = "wss://stream.binance.com:9443/ws"
 WS_URL = "wss://ws-api.binance.com:443/ws-api/v3"
 
