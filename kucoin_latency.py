@@ -20,14 +20,14 @@ cancel_end_time = 0
 SYMBOL = 'XBTUSDTM'
 
 #sub
-YOUR_KEY = '670f66ea70124c0001e0e26f'
-YOUR_SEC = '2851569b-aac3-40fa-8bcc-779ad59e036f'
-YOUR_PASS = "12##!@#%aab"
+YOUR_KEY = ''
+YOUR_SEC = ''
+YOUR_PASS = ""
 
 #main
-#YOUR_KEY = '67729b25baf898000104d6d5'
-#YOUR_SEC = '7d2e70e0-bbcf-4a63-8fb0-43a7cb70ea3f'
-#YOUR_PASS = "aaaa1111"
+#YOUR_KEY = ''
+#YOUR_SEC = ''
+#YOUR_PASS = ""
 
 csv_file = open('order_data.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)

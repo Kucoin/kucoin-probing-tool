@@ -13,8 +13,8 @@ import websocket
 from websocket import WebSocketApp
 
 # Binance API 配置
-API_KEY = ""
-API_SECRET = ""
+API_KEY = "vEaHAma8BYp6FCnI9LWQxnjFpehjjsBVnmvsVoIXrQNbh44JLY7z1e5V5fTvDNzF"
+API_SECRET = "fl3TY42WlHY8XQhxSrh6LLPa4E4x60mtKm1D8efrUnCW94QK2NAMefYeOD750nF5"
 WS_STREAM_URL = "wss://stream.binance.com:9443/ws"
 WS_URL = "wss://ws-api.binance.com:443/ws-api/v3"
 
@@ -231,27 +231,53 @@ def start_stream_websocket(listen_key):
         on_ping=on_stream_ping
     )
     ws.run_forever()
+
+def _response_payload(response):
+    try:
+        return response.json()
+    except requests.exceptions.JSONDecodeError:
+        return {
+            "text": response.text[:500],
+            "content_type": response.headers.get("Content-Type", ""),
+        }
     
 def create_listen_key():
     url = "https://api.binance.com/api/v3/userDataStream"
     headers = {"X-MBX-APIKEY": API_KEY}
-    response = requests.post(url, headers=headers)
+    response = requests.post(url, headers=headers, timeout=10)
     if response.status_code == 200:
-        return response.json()["listenKey"]
-    else:
-        raise Exception(f"Failed to create listen key: {response.json()}")
+        payload = _response_payload(response)
+        listen_key = payload.get("listenKey")
+        if not listen_key:
+            raise Exception(f"listenKey missing in successful response: {payload}")
+        return listen_key
+
+    payload = _response_payload(response)
+    raise Exception(
+        f"Failed to create listen key: status={response.status_code}, payload={payload}"
+    )
 
 def keep_listen_key_alive(listen_key):
     url = f"https://api.binance.com/api/v3/userDataStream?listenKey={listen_key}"
     headers = {"X-MBX-APIKEY": API_KEY}
-    response = requests.put(url, headers=headers)
+    response = requests.put(url, headers=headers, timeout=10)
     if response.status_code != 200:
-        raise Exception(f"Failed to refresh listen key: {response.json()}")
+        payload = _response_payload(response)
+        raise Exception(
+            f"Failed to refresh listen key: status={response.status_code}, payload={payload}"
+        )
 
 if __name__ == "__main__":
-    listen_key = create_listen_key()
-    ws_stream_thread = threading.Thread(target=start_stream_websocket, args=(listen_key,), daemon=True)
-    ws_stream_thread.start()
+    listen_key = None
+    try:
+        listen_key = create_listen_key()
+    except Exception as error:
+        print(f"[WARN] userDataStream disabled: {error}")
+
+    if listen_key:
+        ws_stream_thread = threading.Thread(target=start_stream_websocket, args=(listen_key,), daemon=True)
+        ws_stream_thread.start()
+
     while True:
         rest_order_place()
         time.sleep(1)
